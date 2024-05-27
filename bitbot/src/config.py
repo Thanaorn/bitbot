@@ -14,4 +14,4 @@ class Config(object):
     RATELIMIT_STORAGE_URI = "memory://"
 
     # Flask SQLAlchemy
-    SQLALCHEMY_DATABASE_URI = "sqlite:///demo.db"
+    SQLALCHEMY_DATABASE_URI = "sqlite:///database.db"

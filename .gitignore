@@ -1,0 +1,7 @@
+.venv/
+
+src/__pycache__/
+src/views/__pycache__
+
+
+instance/

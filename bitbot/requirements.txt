@@ -2,3 +2,5 @@ flask
 flask_cors
 flask-limiter
 flask_sqlalchemy
+pandas
+redis
