@@ -4,12 +4,12 @@ import schedule
 import time
 
 # Your LINE channel access token
-LINE_ACCESS_TOKEN = "IaOocLOEQx4VhqsIPRzR1yFtMI831tALheSTsCCl54wlnTIwCj1rELDnlCtZXuSPxxBLKUS5VQHV2VtXkq5ewSCq4Z2sxT4scfq6eCmZW4kExTcyh9JsPGm8TLGDSzplZSyiqPuaMRwPNDw1DHVjbAdB04t89/1O/w1cDnyilFU="
+LINE_ACCESS_TOKEN = "_"
 
 # URL for sending messages via LINE Messaging API
 url = "http://127.0.0.1:5000/pushone"
 
-user_id = "U4f937a2f31fb4d02e9f552c4d40f5fa2"
+user_id = "_"
 
 # Define the message payload as a Python dictionary
 message_payload = {

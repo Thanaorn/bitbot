@@ -13,7 +13,7 @@ def sql_to_csv(cid,name):
     df = pd.read_sql_query(query, engine)
 
     # Define the file path for saving the CSV file
-    csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.csv'
+    csv_file_path = rf'_'
 
     # Export the DataFrame to a CSV file
     df.to_csv(csv_file_path, index=False)
