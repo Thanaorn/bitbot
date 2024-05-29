@@ -168,9 +168,9 @@ def edit_data():
         r.set(uid_encode+"work_edit",data2["work"])
         r.set(uid_encode+"feeling_edit",data2["feeling"])
         r.set(uid_encode+"income_edit",data2["income"])
-        r.set(uid_encode+"expense",data2["expense"])
-        r.set(uid_encode+"daily",data2["daily"])
-        return {"status":"success"},200
+        r.set(uid_encode+"expense_edit",data2["expense"])
+        r.set(uid_encode+"daily_edit",data2["daily"])
+        return "แก้ไขเสร็จสิ้น"
     
 @bp.route("/confirmedit", methods=["POST"])
 def confirm_edit():
