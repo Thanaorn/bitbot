@@ -15,6 +15,7 @@ class UserHabit(db.Model):
     work=Column(Integer,index=True,nullable=True)
     feeling=Column(Integer,index=True,nullable=True)
     sleep=Column(Integer,index=True,nullable=True)
-
+    daily=Column(String,index=True,nullable=True)
+    date=Column(String,index=True,nullable=True)
 
 

@@ -1,3 +1,4 @@
+from datetime import datetime
 import hashlib
 from flask import Blueprint, json, jsonify, render_template,request, send_file
 from ..models import db,UserHabit
@@ -5,6 +6,7 @@ from sqlalchemy import select, update
 import os
 import redis
 from ..views import export
+import threading
 
 bp = Blueprint("index", __name__, url_prefix="/")
 
@@ -31,11 +33,12 @@ def sql_to_update_table(index_value,uid_encode):
         # Update the table    
         values = {
                 "income": r.getdel(uid_encode+"income_edit"),
-                "expense": r.getdel(uid_encode+"expense"),
+                "expense": r.getdel(uid_encode+"expense_edit"),
                 "sleep": r.getdel(uid_encode+"sleep_edit"),
                 "feeling": r.getdel(uid_encode+"feeling_edit"),
                 "work":r.getdel(uid_encode+"work_edit"),
-                "exercise":r.getdel(uid_encode+"exercise_edit")
+                "exercise":r.getdel(uid_encode+"exercise_edit"),
+                "daily":r.getdel(uid_encode+"daily_edit")
             }
         db.session.execute(update(UserHabit).where(UserHabit.index_id==index_value).values(values))
         db.session.commit()
@@ -67,7 +70,9 @@ def link_download():
     if is_file_in_folder(folder_path, f"{name}.csv"):
         csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.csv'
         return send_file(csv_file_path, as_attachment=True)
-
+    else:
+        return 'file doesn\'t exit '
+    
 @bp.route("/download", methods=["POST"])
 def download():
     name = request.form['name']
@@ -94,7 +99,7 @@ def post_all():
         print("feeling : ",data2["feeling"])
         print("income : ",data2["income"])
         print("expense : ",data2["expense"])
-        
+        print("daily : ",data2["daily"])
         r.set(uid_encode+"id",uid_encode)
         r.set(uid_encode+"exercise",data2["exercise"])
         r.set(uid_encode+"sleep",data2["sleep"])
@@ -102,6 +107,7 @@ def post_all():
         r.set(uid_encode+"feeling",data2["feeling"])
         r.set(uid_encode+"income",data2["income"])
         r.set(uid_encode+"expense",data2["expense"])
+        r.set(uid_encode+"daily",data2["daily"])
         return {"status":"set to redis"}, 201
     else:
         return "failed to recive data",400
@@ -123,6 +129,10 @@ def confirm_data():
             ub.feeling = r.getdel(uid_encode+"feeling")
             ub.income = r.getdel(uid_encode+"income")
             ub.expense = r.getdel(uid_encode+"expense")
+            ub.daily = r.getdel(uid_encode+"daily")
+            current_date = datetime.now()
+            formatted_date = current_date.strftime('%d/%m/%Y')
+            ub.date = formatted_date
             db.session.add(ub)
             db.session.commit()
             return {"status":"add to database"},200
@@ -134,6 +144,7 @@ def confirm_data():
             r.delete(uid_encode+"feeling")
             r.delete(uid_encode+"income")
             r.delete(uid_encode+"expense")
+            r.delete(uid_encode+"daily")
             return {"status":"cancel data"},400
     
 @bp.route("/editdata", methods=["POST"])
@@ -158,6 +169,7 @@ def edit_data():
         r.set(uid_encode+"feeling_edit",data2["feeling"])
         r.set(uid_encode+"income_edit",data2["income"])
         r.set(uid_encode+"expense",data2["expense"])
+        r.set(uid_encode+"daily",data2["daily"])
         return {"status":"success"},200
     
 @bp.route("/confirmedit", methods=["POST"])
@@ -180,6 +192,7 @@ def confirm_edit():
         r.delete(uid_encode+"feeling_edit")
         r.delete(uid_encode+"income_edit")
         r.delete(uid_encode+"expense_edit")
+        r.delete(uid_encode+"daily_edit")
         return {"status":"cancel edit"}
     
 @bp.route("/exportdata", methods=["POST"])
@@ -192,5 +205,6 @@ def export_data():
         cid_encode = encode_id(cid)
         print(cid_encode)
         print(name)
-        export.sql_to_csv(cid_encode,name)
+        thread = threading.Thread(target=export.sql_to_csv, args=(cid_encode,name,))
+        thread.start()
     return {"status":"success"}

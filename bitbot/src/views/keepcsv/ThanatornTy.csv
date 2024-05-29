@@ -1,3 +1,2 @@
-index_id,id,income,expense,exercise,work,feeling,sleep
-1,31d5347cafd212916d4afa49e475f5e3ff107930654088b496f08950eb918c4c,200,200,1,1,1,1
-6,31d5347cafd212916d4afa49e475f5e3ff107930654088b496f08950eb918c4c,200,200,1,1,1,1
+index_id,date,income,expense,exercise,work,sleep,feeling,daily
+1,29/05/2024,100,50,3,3,3,3,ไม่อยากแล้ว
