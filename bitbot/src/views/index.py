@@ -67,8 +67,8 @@ def link_download():
     name = data["name"]
     print(name)
     folder_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv'
-    if is_file_in_folder(folder_path, f"{name}.csv"):
-        csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.csv'
+    if is_file_in_folder(folder_path, f"{name}.pdf"):
+        csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.pdf'
         return send_file(csv_file_path, as_attachment=True)
     else:
         return 'file doesn\'t exit '
@@ -78,8 +78,8 @@ def download():
     name = request.form['name']
     print("Name:",name)
     folder_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv'
-    if is_file_in_folder(folder_path, f"{name}.csv"):
-        file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.csv'
+    if is_file_in_folder(folder_path, f"{name}.pdf"):
+        file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.pdf'
         return send_file(file_path, as_attachment=True)
     else:
         return render_template('index.html.jinja'),401
