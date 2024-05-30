@@ -4,3 +4,6 @@ flask-limiter
 flask_sqlalchemy
 pandas
 redis
+fpdf2
+schedule
+datetime

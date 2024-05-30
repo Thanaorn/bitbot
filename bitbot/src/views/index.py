@@ -1,15 +1,19 @@
 from datetime import datetime
 import hashlib
 from flask import Blueprint, json, jsonify, render_template,request, send_file
+import requests
 from ..models import db,UserHabit
 from sqlalchemy import select, update
 import os
 import redis
 from ..views import export
 import threading
-
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 bp = Blueprint("index", __name__, url_prefix="/")
 
+#redis create 
 redis_host = os.getenv('REDIS_HOST', 'localhost')
 redis_port = os.getenv('REDIS_PORT', 6379)
 r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
@@ -61,14 +65,19 @@ def get_payload():
     }
     return jsonify(data)
 
+@bp.route("/webpage",methods=["GET"])
+def get_webpage():
+    pdf_path=r'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\ThanatornTyfinal.pdf'
+    return render_template('pdf.html', pdf_url=pdf_path),200
+    
 @bp.route("/link", methods=["GET"])
 def link_download():
     data = request.args
     name = data["name"]
     print(name)
     folder_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv'
-    if is_file_in_folder(folder_path, f"{name}.pdf"):
-        csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.pdf'
+    if is_file_in_folder(folder_path, f"{name}final.pdf"):
+        csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}final.pdf'
         return send_file(csv_file_path, as_attachment=True)
     else:
         return 'file doesn\'t exit '
@@ -205,6 +214,32 @@ def export_data():
         cid_encode = encode_id(cid)
         print(cid_encode)
         print(name)
-        thread = threading.Thread(target=export.sql_to_csv, args=(cid_encode,name,))
-        thread.start()
+        #export.sql_to_csv(cid_encode,name)
+        t = threading.Thread(target=export.sql_to_csv, args=(cid_encode,name,))
+        t.setDaemon(True)
+        t.start()
     return {"status":"success"}
+
+@bp.route("/pushone", methods=["POST"])
+def push_one():
+    LINE_ACCESS_TOKEN = "IaOocLOEQx4VhqsIPRzR1yFtMI831tALheSTsCCl54wlnTIwCj1rELDnlCtZXuSPxxBLKUS5VQHV2VtXkq5ewSCq4Z2sxT4scfq6eCmZW4kExTcyh9JsPGm8TLGDSzplZSyiqPuaMRwPNDw1DHVjbAdB04t89/1O/w1cDnyilFU="
+    user_id = "U4f937a2f31fb4d02e9f552c4d40f5fa2"
+    LINE_API_URL = "https://api.line.me/v2/bot/message/push"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + LINE_ACCESS_TOKEN,
+    }
+    payload = {
+        "to": user_id,
+        "messages": [
+            {
+                "type":"text",
+                "text":"Hello, world id "
+            }
+        ]
+    }
+    response = requests.post(LINE_API_URL, headers=headers, json=payload)
+    if response.status_code == 200:
+        return jsonify({"status": "success", "message": "Message sent successfully"})
+    else:
+        return jsonify({"status": "error", "message": "Failed to send message"}), response.status_code

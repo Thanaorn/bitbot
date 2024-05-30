@@ -1,34 +1,42 @@
 import csv
+import threading
 import pandas as pd
 from sqlalchemy import create_engine
 #from csv2pdf import convert
 #from urllib.parse import unquote
+import numpy as np
+import seaborn as sns
 from fpdf import FPDF
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from PyPDF2 import PdfMerger
+
 def sql_to_csv(cid,name):
-    
-    # Define the file path to your SQLite database
     database_path = r'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\instance\database.db'
     fonts = r"C:\Users\thana\Downloads\Kanit\Kanit-Regular.ttf"
     pdf_file_path = rf"C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.pdf"
-    # Create SQLAlchemy engine
+    folder_path = rf"C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv"
+
     engine = create_engine(f'sqlite:///{database_path}')
-
-    # Define the SQL query to fetch data from the database
+    
     query = f"SELECT index_id,date,income,expense,exercise,work,sleep,feeling,daily FROM user_habit WHERE id='{cid}' "
-
-    # Read data from the database into a pandas DataFrame
     df = pd.read_sql_query(query, engine)
-
-    # Define the file path for saving the CSV file
     csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.csv'
-
-    # Export the DataFrame to a CSV file
     df.to_csv(csv_file_path, index=False,encoding="utf-8")
     print(f'Data exported to {csv_file_path}')
-
     #convert to pdf file
     csv_to_pdf(csv_file_path,pdf_file_path,fonts)
-    #convert(csv_file_path, pdf_file_path,font=fonts, headerfont=fonts)
+    #df2 = pd.read_csv(rf'{folder_path}\{name}.csv')
+    plot_col(df,name)
+    income_expenses(df,name)
+    merger = PdfMerger()
+    merger.append(pdf_file_path)
+    merger.append(rf'{folder_path}\{name}pie.pdf')
+    merger.append(rf'{folder_path}\{name}summary.pdf')
+
+    with open(rf'{folder_path}\{name}final.pdf', 'wb') as fout:
+        merger.write(fout)
     
 def csv_to_pdf(csv_file_path,pdf_file_path,fonts):
     pdf = FPDF()
@@ -82,17 +90,41 @@ def csv_to_pdf(csv_file_path,pdf_file_path,fonts):
             
     pdf.output(pdf_file_path)
     
-# def csv_to_graph(csv_file_path):
-#     df = pd.read_csv(csv_file_path)
-#     work_data = df['work']
+def plot_col(df,name):
+    folder_path = rf"C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}pie.pdf"
+    rows = ['exercise', 'work', 'feeling', 'sleep']
+    colors = ['lightgreen', 'palegoldenrod', 'lightcoral']
 
-#     # Calculate the count of each unique value
-#     work_counts = work_data.value_counts()
+    fig, axs = plt.subplots(2, 2, figsize=(7, 7))  # Set the size of the figure and create subplots
 
+    for i, row in enumerate(rows):
+        data = df[row]
+        counts = data.value_counts()
+        r = i // 2  # Row index
+        c = i % 2   # Column index
+        axs[r, c].pie(counts, labels=counts.index, autopct='%1.1f%%', colors=colors, startangle=140)
+        axs[r, c].set_title(f'{row.capitalize()} Ratio')
+        axs[r, c].axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
-#     # Plot a pie chart for the "work" column with explode settings
-#     work_counts.plot(kind='pie', autopct='%1.1f%%')
-#     # Plot a pie chart for the "work" column
-#     plt.title('Work Distribution')
-#     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-#     plt.show()
+    plt.tight_layout()
+    plt.savefig(folder_path)
+    plt.close('all')
+
+def income_expenses(df,name):
+    folder_path = rf"C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}summary.pdf"
+    # Plot a histogram for income and expense data
+    total_income = df['income'].sum()
+    total_expense = df['expense'].sum()
+    remaining = total_income-total_expense
+    # Plotting the total income and total expense
+    plt.bar(['Income', 'Expense','Remaining'], [total_income, total_expense,remaining], color=['dodgerblue', 'lightcoral','gold'])
+    # Adding labels and title
+    plt.xlabel('Category')
+    plt.ylabel('Total Amount')
+    plt.title('Total Income vs Total Expense')
+    
+    for i, v in enumerate([total_income, total_expense, remaining]):
+        plt.text(i, v + 50, str(v), ha='center')
+        
+    plt.savefig(folder_path)
+    plt.close('all')
