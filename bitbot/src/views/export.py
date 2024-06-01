@@ -29,8 +29,10 @@ def sql_to_csv(cid,name):
     csv_to_pdf(csv_file_path,pdf_file_path,fonts)
     #df2 = pd.read_csv(rf'{folder_path}\{name}.csv')
     plot_col(df,name)
+    
     income_expenses(df,name)
     merger = PdfMerger()
+    
     merger.append(pdf_file_path)
     merger.append(rf'{folder_path}\{name}pie.pdf')
     merger.append(rf'{folder_path}\{name}summary.pdf')
@@ -122,9 +124,9 @@ def income_expenses(df,name):
     plt.xlabel('Category')
     plt.ylabel('Total Amount')
     plt.title('Total Income vs Total Expense')
-    
+
     for i, v in enumerate([total_income, total_expense, remaining]):
-        plt.text(i, v + 50, str(v), ha='center')
+        plt.text(i, v + 50, str(v), ha='center', va='bottom')
         
     plt.savefig(folder_path)
     plt.close('all')

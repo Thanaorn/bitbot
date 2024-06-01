@@ -5,6 +5,7 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
+
 from .config import Config
 
 
@@ -16,11 +17,9 @@ db = SQLAlchemy(model_class=Base)
 cors = CORS()
 limiter = Limiter(get_remote_address)
 
-
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
-
     # Init extension
     db.init_app(app)
     cors.init_app(app)
@@ -33,7 +32,6 @@ def create_app() -> Flask:
 
     from .views import index
     app.register_blueprint(index.bp)
-
 
     from .exceptions import (InvalidSubjectID, MissingRequiredKey,
                              exception_handler)
