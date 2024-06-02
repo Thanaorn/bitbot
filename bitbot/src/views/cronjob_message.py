@@ -17,7 +17,7 @@ payload = {
         "messages": [
             {
                 "type":"text",
-                "text":"Hello, world id "
+                "text":"วันนี้ได้ทำHabit trackerยัง?"
             }
         ]
     }
@@ -30,7 +30,7 @@ payload = {
 #         "messages": [
 #             {
 #                 "type":"text",
-#                 "text":"Hello, world id "
+#                 "text":"วันนี้ได้ทำHabit trackerยัง?"
 #             }
 #         ]
 #     }
@@ -39,10 +39,12 @@ def send_message():
     print("Message sent. Response Status Code:", response.status_code)
 def check_using():
     return
-    
+
 # Schedule job to run every 5 minutes
 schedule.every(5).seconds.do(send_message)
-# Infinite loop to run the scheduler
+
+# scheduled_time = "22:30"
+# schedule.every().day.at(scheduled_time).do(send_message)
 
 try:
     while True:

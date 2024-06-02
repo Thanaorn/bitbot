@@ -1,7 +1,6 @@
 import base64
 from datetime import datetime
-from flask import Blueprint, json, jsonify, render_template,request, send_file
-import pika
+from flask import Blueprint, Flask, json, jsonify, render_template,request, send_file
 import requests
 from ..models import db,UserHabit
 from sqlalchemy import select, update
@@ -22,6 +21,7 @@ redis_host = os.getenv('REDIS_HOST', 'localhost')
 redis_port = os.getenv('REDIS_PORT', 6379)
 r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
 
+
 app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
 @app.task
 def process_data(uid, data):
@@ -35,6 +35,8 @@ def process_data(uid, data):
     r.set(uid_encode+"expense", data["expense"])
     r.set(uid_encode+"daily", data["daily"])
 def use_data(uid):
+    key=genKey()
+    fernet=token(key)
     uid_encode = encode_id(uid)
     ub = UserHabit()
     ub.id = r.getdel(uid_encode+"id")
@@ -42,9 +44,10 @@ def use_data(uid):
     ub.sleep = r.getdel(uid_encode+"sleep")
     ub.work = r.getdel(uid_encode+"work")
     ub.feeling = r.getdel(uid_encode+"feeling")
-    ub.income = r.getdel(uid_encode+"income")
-    ub.expense = r.getdel(uid_encode+"expense")
-    ub.daily = r.getdel(uid_encode+"daily")
+    ub.income = encrypt_message(fernet,r.getdel(uid_encode+"income")).decode()
+    ub.expense = encrypt_message(fernet,r.getdel(uid_encode+"expense")).decode()
+    ub.daily = encrypt_message(fernet,r.getdel(uid_encode+"daily")).decode()
+    ub.key = key.decode()
     current_date = datetime.now()
     formatted_date = current_date.strftime('%d/%m/%Y')
     ub.date = formatted_date
@@ -62,14 +65,17 @@ def del_data(uid):
     r.delete(uid_encode+"daily")
 def sql_to_update_table(index_value,uid_encode):
     try:
+        key=genKey()
+        fernet=token(key)
         values = {
-                "income": r.getdel(uid_encode+"income_edit"),
-                "expense": r.getdel(uid_encode+"expense_edit"),
+                "income": encrypt_message(fernet,r.getdel(uid_encode+"income_edit")).decode(),
+                "expense": encrypt_message(fernet,r.getdel(uid_encode+"expense_edit")).decode(),
                 "sleep": r.getdel(uid_encode+"sleep_edit"),
                 "feeling": r.getdel(uid_encode+"feeling_edit"),
                 "work":r.getdel(uid_encode+"work_edit"),
                 "exercise":r.getdel(uid_encode+"exercise_edit"),
-                "daily":r.getdel(uid_encode+"daily_edit")
+                "daily":encrypt_message(fernet,r.getdel(uid_encode+"daily_edit")).decode(),
+                "key":key
             }
         db.session.execute(update(UserHabit).where(UserHabit.index_id==index_value).values(values))
         db.session.commit()
@@ -99,27 +105,19 @@ def del_edit_data(uid_encode):
     r.delete(uid_encode+"expense_edit")
     r.delete(uid_encode+"daily_edit")
         
-def generate_key(key_string):
-    # Use SHA256 to hash the key string
-    hashed_key = hashlib.sha256(key_string.encode()).digest()
-    # Encode the hashed key with base64
-    encoded_key = base64.urlsafe_b64encode(hashed_key)
-    # Pad the key if it's shorter than 32 bytes
-    encoded_key += b'=' * (32 - len(encoded_key))
-    return encoded_key
-
-def encrypt_message(message, key):
-    fernet = Fernet(key)
-    encrypted_message = fernet.encrypt(message.encode())
-    return encrypted_message
-
-def decrypt_message(encrypted_message, key):
-    fernet = Fernet(key)
-    decrypted_message = fernet.decrypt(encrypted_message).decode()
-    return decrypted_message
-
 def encode_id(cid):
     return hashlib.sha256(cid.encode()).hexdigest()
+
+
+def token(key):
+    f = Fernet(key)
+    return f
+def genKey():
+    key = Fernet.generate_key()
+    return key
+def encrypt_message(key,message):
+    en_message = key.encrypt(message.encode())
+    return en_message
 
 def is_file_in_folder(folder_path, filename):
     file_path = os.path.join(folder_path, filename)
@@ -160,6 +158,8 @@ def link_download():
     name = data["name"]
     print(name)
     folder_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv'
+    current_date = datetime.now()
+    formatted_date = str(current_date.strftime('%d/%m/%Y'))
     if is_file_in_folder(folder_path, f"{name}final.pdf"):
         csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}final.pdf'
         return send_file(csv_file_path, as_attachment=True)
@@ -342,19 +342,6 @@ def export_data():
 
 @bp.route("/enc",methods=["GET"])
 def enen():
-    key_string = "my_secret_key"
-
-    # Generate a key from the key string
-    key = generate_key(key_string)
-
-    # Your message
     message = "This is a secret message."
 
-    # Encrypt the message
-    encrypted_message = encrypt_message(message, key)
-    print("Encrypted message:", encrypted_message)
-
-    # Decrypt the message
-    decrypted_message = decrypt_message(encrypted_message, key)
-    print("Decrypted message:", decrypted_message)
     return {"status":"success"},200

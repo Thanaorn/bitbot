@@ -32,7 +32,7 @@ def create_app() -> Flask:
 
     from .views import index
     app.register_blueprint(index.bp)
-
+    
     from .exceptions import (InvalidSubjectID, MissingRequiredKey,
                              exception_handler)
     app.register_error_handler(MissingRequiredKey, exception_handler)

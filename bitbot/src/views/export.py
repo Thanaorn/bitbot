@@ -11,7 +11,18 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from PyPDF2 import PdfMerger
+from cryptography.fernet import Fernet
+from datetime import datetime
 
+def decrypt_message(key,message):
+    f = Fernet(key)
+    dec_message=f.decrypt(message)
+    return dec_message.decode()
+
+def cast_type_back(df2,column):
+    data_type = 'int64'
+    df2[column] = df2[column].astype(data_type)
+    
 def sql_to_csv(cid,name):
     database_path = r'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\instance\database.db'
     fonts = r"C:\Users\thana\Downloads\Kanit\Kanit-Regular.ttf"
@@ -20,23 +31,62 @@ def sql_to_csv(cid,name):
 
     engine = create_engine(f'sqlite:///{database_path}')
     
-    query = f"SELECT index_id,date,income,expense,exercise,work,sleep,feeling,daily FROM user_habit WHERE id='{cid}' "
+    query = f"SELECT index_id,date,income,expense,exercise,work,sleep,feeling,daily,key FROM user_habit WHERE id='{cid}' "
     df = pd.read_sql_query(query, engine)
     csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.csv'
+    
     df.to_csv(csv_file_path, index=False,encoding="utf-8")
     print(f'Data exported to {csv_file_path}')
     #convert to pdf file
+    df2 = pd.read_csv(rf'{folder_path}\{name}.csv')
+    for i in range(df['income'].count()):
+        key = df['key'][i]
+        #print("key=",df['key'][i])
+        #f = Fernet(key)
+        
+        income_encrypted = df['income'][i]
+        expense_encrypted = df['expense'][i]
+        daily_encrypted = df['daily'][i]
+        
+        # print("enc1=",income_encrypted)
+        # print("enc2=",expense_encrypted)
+        # print("enc3=",daily_encrypted)
+        
+        income_decrypted = decrypt_message(key,income_encrypted)
+        expense_decrypted = decrypt_message(key,expense_encrypted)
+        daily_decrypted = decrypt_message(key,daily_encrypted)
+        
+        # income_decrypted = f.decrypt(income_encrypted)
+        # expense_decrypted = f.decrypt(expense_encrypted)
+        # daily_decrypted = f.decrypt(daily_encrypted)
+        
+        # print("dec1=",income_decrypted.decode())
+        # print("dec2=",expense_decrypted.decode())
+        # print("dec3=",daily_decrypted.decode())
+        
+        df2.loc[i,'income'] = income_decrypted
+        df2.loc[i,'expense'] = expense_decrypted
+        df2.loc[i,'daily'] = daily_decrypted
+    
+    column_to_delete = 'key'
+    if column_to_delete in df2.columns:
+        del df2[column_to_delete]
+        
+    df2.to_csv(csv_file_path, index=False,encoding="utf-8")
+    
+    cast_type_back(df2,'income')
+    cast_type_back(df2,'expense')
+    
     csv_to_pdf(csv_file_path,pdf_file_path,fonts)
-    #df2 = pd.read_csv(rf'{folder_path}\{name}.csv')
-    plot_col(df,name)
+    plot_col(df2,name)
+    income_expenses(df2,name)
     
-    income_expenses(df,name)
     merger = PdfMerger()
-    
     merger.append(pdf_file_path)
     merger.append(rf'{folder_path}\{name}pie.pdf')
     merger.append(rf'{folder_path}\{name}summary.pdf')
-
+    
+    current_date = datetime.now()
     with open(rf'{folder_path}\{name}final.pdf', 'wb') as fout:
         merger.write(fout)
     
@@ -119,14 +169,15 @@ def income_expenses(df,name):
     total_expense = df['expense'].sum()
     remaining = total_income-total_expense
     # Plotting the total income and total expense
-    plt.bar(['Income', 'Expense','Remaining'], [total_income, total_expense,remaining], color=['dodgerblue', 'lightcoral','gold'])
+    bars=plt.bar(['Income', 'Expense','Remaining'], [total_income, total_expense,remaining], color=['dodgerblue', 'lightcoral','gold'])
     # Adding labels and title
     plt.xlabel('Category')
     plt.ylabel('Total Amount')
     plt.title('Total Income vs Total Expense')
 
-    for i, v in enumerate([total_income, total_expense, remaining]):
-        plt.text(i, v + 50, str(v), ha='center', va='bottom')
-        
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 2), ha='center', va='bottom')
+    
     plt.savefig(folder_path)
     plt.close('all')
