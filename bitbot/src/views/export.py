@@ -200,14 +200,15 @@ def callback(ch, method, properties, body):
 
     thread = threading.Thread(target=process)
     thread.start()
-    
 
-# print("Connecting to RabbitMQ...")  
-# connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-# channel = connection.channel()
-# print("Connected to RabbitMQ.")
-# channel.queue_declare(queue='export_file')
+if __name__ == "__main__":
+    print("this is export")
+    print("Connecting to RabbitMQ...")  
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
+    print("Connected to RabbitMQ.")
+    channel.queue_declare(queue='export_file')
 
-# channel.basic_consume(queue='export_file', on_message_callback=callback, auto_ack=True)
-# print(' [*] Waiting for messages. To exit press CTRL+C')
-# channel.start_consuming()
+    channel.basic_consume(queue='export_file', on_message_callback=callback, auto_ack=True)
+    print(' [*] Waiting for messages. To exit press CTRL+C')
+    channel.start_consuming()
