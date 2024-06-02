@@ -1,9 +1,6 @@
 import csv
-import threading
 import pandas as pd
 from sqlalchemy import create_engine
-#from csv2pdf import convert
-#from urllib.parse import unquote
 import numpy as np
 import seaborn as sns
 from fpdf import FPDF
@@ -13,6 +10,11 @@ import matplotlib.pyplot as plt
 from PyPDF2 import PdfMerger
 from cryptography.fernet import Fernet
 from datetime import datetime
+import threading
+import os
+import pika
+from flask import Flask, json
+app = Flask(__name__)
 
 def decrypt_message(key,message):
     f = Fernet(key)
@@ -181,3 +183,31 @@ def income_expenses(df,name):
     
     plt.savefig(folder_path)
     plt.close('all')
+
+def callback(ch, method, properties, body):
+    def process():
+        try:
+            print(f" [x] Received message")
+            message = json.loads(body)
+            name = message['name']
+            cid = message['cid']
+            print(f"Message content: {message}")
+            print(f" [x] Received send file request")
+            sql_to_csv(cid,name)
+            # You can perform additional processing here, if needed
+        except Exception as e:
+                print(f"Error processing message: {e}")
+
+    thread = threading.Thread(target=process)
+    thread.start()
+    
+
+# print("Connecting to RabbitMQ...")  
+# connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+# channel = connection.channel()
+# print("Connected to RabbitMQ.")
+# channel.queue_declare(queue='export_file')
+
+# channel.basic_consume(queue='export_file', on_message_callback=callback, auto_ack=True)
+# print(' [*] Waiting for messages. To exit press CTRL+C')
+# channel.start_consuming()

@@ -1,6 +1,6 @@
-import base64
 from datetime import datetime
 from flask import Blueprint, Flask, json, jsonify, render_template,request, send_file
+import pika
 import requests
 from ..models import db,UserHabit
 from sqlalchemy import select, update
@@ -78,7 +78,7 @@ def sql_to_update_table(index_value,uid_encode):
                 "key":key
             }
         db.session.execute(update(UserHabit).where(UserHabit.index_id==index_value).values(values))
-        db.session.commit()
+        db.session.commit() 
 
         print(f'Table updated with data for index {index_value}')
         
@@ -104,11 +104,9 @@ def del_edit_data(uid_encode):
     r.delete(uid_encode+"income_edit")
     r.delete(uid_encode+"expense_edit")
     r.delete(uid_encode+"daily_edit")
-        
+       
 def encode_id(cid):
     return hashlib.sha256(cid.encode()).hexdigest()
-
-
 def token(key):
     f = Fernet(key)
     return f
@@ -161,8 +159,8 @@ def link_download():
     current_date = datetime.now()
     formatted_date = str(current_date.strftime('%d/%m/%Y'))
     if is_file_in_folder(folder_path, f"{name}final.pdf"):
-        csv_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}final.pdf'
-        return send_file(csv_file_path, as_attachment=True)
+        pdf_file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}final.pdf'
+        return send_file(pdf_file_path,as_attachment=True)
     else:
         return 'file doesn\'t exit '
     
@@ -250,7 +248,7 @@ def set_queue():
         if data2["daily"]=="ไม่" or data2["daily"]=="no":
             data2["daily"]=""
             
-        process_data(uid, data2)  # Enqueue Celery task
+        process_data(uid, data2) 
         return {"status": "Data enqueued for processing"}, 201
     else:
         return "Failed to receive data", 400
@@ -262,10 +260,10 @@ def get_queue():
         data2 = json.loads(data)
         uid = data2["cid"]
         if data2["status"] == "ถูกต้อง":
-            use_data(uid)  # Dnqueue Celery task
+            use_data(uid) 
             return {"status": "Data dequeued for processing"}, 201
         else:
-            del_data(uid)  #Delete Celery task
+            del_data(uid) 
             return {"status":"cancel data"},400
     else:
         return "Failed to receive data", 400
@@ -335,9 +333,23 @@ def export_data():
         print(cid_encode)
         print(name)
         #export.sql_to_csv(cid_encode,name)
-        t = threading.Thread(target=export.sql_to_csv, args=(cid_encode,name,))
-        t.setDaemon(True)
-        t.start()
+        try:
+            print(f"Connecting to RabbitMQ")
+            connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+            channel = connection.channel()
+
+            channel.queue_declare(queue='export_file')
+
+            message = json.dumps({'name':name,'cid':cid_encode})
+
+            channel.basic_publish(exchange='', routing_key='export_file', body=message)
+            print(f" [x] Sent export request")
+            connection.close()
+        except Exception as e:
+            print(f"Error export request: {e}") 
+        # t = threading.Thread(target=export.sql_to_csv, args=(cid_encode,name,))
+        # t.setDaemon(True)
+        # t.start()
     return {"status":"success"}
 
 @bp.route("/enc",methods=["GET"])
