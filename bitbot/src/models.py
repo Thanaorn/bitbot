@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String,FLOAT
 from sqlalchemy.orm import Mapped,relationship
 
 from . import db
@@ -18,4 +18,6 @@ class UserHabit(db.Model):
     daily=Column(String,index=True,nullable=True)
     date=Column(String,index=True,nullable=True)
     key=Column(String,index=True,nullable=True)
-    
+class UserDate(db.Model):
+    id = Column(String,index=True,nullable=True,primary_key=True)
+    date=Column(String,index=True,nullable=True)
