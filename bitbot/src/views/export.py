@@ -41,29 +41,15 @@ def sql_to_csv(cid,name):
     df2 = pd.read_csv(rf'{folder_path}\{name}.csv')
     for i in range(df['income'].count()):
         key = df['key'][i]
-        #print("key=",df['key'][i])
-        #f = Fernet(key)
-        
+
         income_encrypted = df['income'][i]
         expense_encrypted = df['expense'][i]
         daily_encrypted = df['daily'][i]
-        
-        # print("enc1=",income_encrypted)
-        # print("enc2=",expense_encrypted)
-        # print("enc3=",daily_encrypted)
-        
+
         income_decrypted = decrypt_message(key,income_encrypted)
         expense_decrypted = decrypt_message(key,expense_encrypted)
         daily_decrypted = decrypt_message(key,daily_encrypted)
-        
-        # income_decrypted = f.decrypt(income_encrypted)
-        # expense_decrypted = f.decrypt(expense_encrypted)
-        # daily_decrypted = f.decrypt(daily_encrypted)
-        
-        # print("dec1=",income_decrypted.decode())
-        # print("dec2=",expense_decrypted.decode())
-        # print("dec3=",daily_decrypted.decode())
-        
+
         df2.loc[i,'income'] = income_decrypted
         df2.loc[i,'expense'] = expense_decrypted
         df2.loc[i,'daily'] = daily_decrypted
@@ -99,6 +85,7 @@ def csv_to_pdf(csv_file_path,pdf_file_path,fonts):
     pdf.add_page()
     pdf.add_font('Kanit', '', fonts, uni=True)
     pdf.set_font("Kanit", size = 12) 
+    pdf.set_auto_page_break(auto=True, margin=15)
     try:
         with open(csv_file_path, 'r', encoding='utf-8-sig') as file:
             reader = csv.reader(file)
@@ -146,6 +133,7 @@ def csv_to_pdf(csv_file_path,pdf_file_path,fonts):
                 row_height = 6
                 
         pdf.output(pdf_file_path)
+        plt.close('all')
     except Exception as e:
                 print(f"Error pdf table: {e}")
     

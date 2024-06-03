@@ -25,26 +25,28 @@ r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
 app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
 @app.task
 def process_data(uid, data):
-    r.set(uid+"id", uid)
-    r.set(uid+"exercise", data["exercise"])
-    r.set(uid+"sleep", data["sleep"])
-    r.set(uid+"work", data["work"])
-    r.set(uid+"feeling", data["feeling"])
-    r.set(uid+"income", data["income"])
-    r.set(uid+"expense", data["expense"])
-    r.set(uid+"daily", data["daily"])
+    r.rpush(uid+"id", uid)
+    r.rpush(uid+"exercise", data["exercise"])
+    r.rpush(uid+"sleep", data["sleep"])
+    r.rpush(uid+"work", data["work"])
+    r.rpush(uid+"feeling", data["feeling"])
+    r.rpush(uid+"income", data["income"])
+    r.rpush(uid+"expense", data["expense"])
+    r.rpush(uid+"daily", data["daily"])
+    
+@app.task    
 def use_data(uid):
     key=genKey()
     fernet=token(key)
     ub = UserHabit()
-    ub.id = r.getdel(uid+"id")
-    ub.exercise = r.getdel(uid+"exercise")
-    ub.sleep = r.getdel(uid+"sleep")
-    ub.work = r.getdel(uid+"work")
-    ub.feeling = r.getdel(uid+"feeling")
-    ub.income = encrypt_message(fernet,r.getdel(uid+"income")).decode()
-    ub.expense = encrypt_message(fernet,r.getdel(uid+"expense")).decode()
-    ub.daily = encrypt_message(fernet,r.getdel(uid+"daily")).decode()
+    ub.id = r.rpop(uid+"id")
+    ub.exercise = r.rpop(uid+"exercise")
+    ub.sleep = r.rpop(uid+"sleep")
+    ub.work = r.rpop(uid+"work")
+    ub.feeling = r.rpop(uid+"feeling")
+    ub.income = encrypt_message(fernet,r.rpop(uid+"income")).decode()
+    ub.expense = encrypt_message(fernet,r.rpop(uid+"expense")).decode()
+    ub.daily = encrypt_message(fernet,r.rpop(uid+"daily")).decode()
     ub.key = key.decode()
     
     # today = datetime.now()
@@ -68,7 +70,7 @@ def use_data(uid):
         ud.date=formatted_date
         db.session.add(ud)
         db.session.commit()
-        
+@app.task
 def del_data(uid):
     r.delete(uid+"id")
     r.delete(uid+"exercise")
@@ -78,6 +80,7 @@ def del_data(uid):
     r.delete(uid+"income")
     r.delete(uid+"expense")
     r.delete(uid+"daily")
+@app.task    
 def sql_to_update_table(index_value,uid):
     try:
         key=genKey()
@@ -100,6 +103,7 @@ def sql_to_update_table(index_value,uid):
     except Exception as e:
         db.session.rollback()
         print(f'Error updating table: {e}')
+@app.task
 def set_edit_data(index,uid,data2):
     r.set(uid+"index_id_edit",index)
     r.set(uid+"id_edit",uid)
@@ -110,6 +114,7 @@ def set_edit_data(index,uid,data2):
     r.set(uid+"income_edit",data2["income"])
     r.set(uid+"expense_edit",data2["expense"])
     r.set(uid+"daily_edit",data2["daily"])
+@app.task
 def del_edit_data(uid):
     r.delete(uid+"id_edit")
     r.delete(uid+"exercise_edit")
@@ -139,26 +144,6 @@ def is_file_in_folder(folder_path, filename):
         print(f"The file '{filename}' does not exist in the folder.")
         return False
     
-# def sql_to_update_table(index_value,uid_encode):
-#     try:
-#         values = {
-#                 "income": r.getdel(uid_encode+"income_edit"),
-#                 "expense": r.getdel(uid_encode+"expense_edit"),
-#                 "sleep": r.getdel(uid_encode+"sleep_edit"),
-#                 "feeling": r.getdel(uid_encode+"feeling_edit"),
-#                 "work":r.getdel(uid_encode+"work_edit"),
-#                 "exercise":r.getdel(uid_encode+"exercise_edit"),
-#                 "daily":r.getdel(uid_encode+"daily_edit")
-#             }
-#         db.session.execute(update(UserHabit).where(UserHabit.index_id==index_value).values(values))
-#         db.session.commit()
-
-#         print(f'Table updated with data for index {index_value}')
-        
-#     except Exception as e:
-#         db.session.rollback()
-#         print(f'Error updating table: {e}')
-    
 @bp.route("/", methods=["GET"])
 def get_test():
     return render_template('index.html.jinja'),200
@@ -177,81 +162,6 @@ def link_download():
     else:
         return 'file doesn\'t exit '
     
-# @bp.route("/download", methods=["POST"])
-# def download():
-#     name = request.form['name']
-#     print("Name:",name)
-#     folder_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv'
-#     if is_file_in_folder(folder_path, f"{name}.pdf"):
-#         file_path = rf'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\src\views\keepcsv\{name}.pdf'
-#         return send_file(file_path, as_attachment=True)
-#     else:
-#         return render_template('index.html.jinja'),401
-#-------------------------------------------DATA
-# @bp.route("/postallscore", methods=["POST"])
-# def post_all():
-#     if request.data:
-#         data = request.data
-#         data2 = json.loads(data)
-#         uid = data2["cid"]
-#         uid_encode = encode_id(uid)
-#         print(data)
-#         print("userID : ",uid_encode)
-#         print("exercise : ",data2["exercise"])
-#         print("sleep : ",data2["sleep"])
-#         print("work : ",data2["work"])
-#         print("feeling : ",data2["feeling"])
-#         print("income : ",data2["income"])
-#         print("expense : ",data2["expense"])
-#         print("daily : ",data2["daily"])
-#         r.set(uid_encode+"id",uid_encode)
-#         r.set(uid_encode+"exercise",data2["exercise"])
-#         r.set(uid_encode+"sleep",data2["sleep"])
-#         r.set(uid_encode+"work",data2["work"])
-#         r.set(uid_encode+"feeling",data2["feeling"])
-#         r.set(uid_encode+"income",data2["income"])
-#         r.set(uid_encode+"expense",data2["expense"])
-#         r.set(uid_encode+"daily",data2["daily"])
-#         return {"status":"set to redis"}, 201
-#     else:
-#         return "failed to recive data",400
-    
-# @bp.route("/confirmdata", methods=["POST"])
-# def confirm_data():
-#     if request.data:
-#         data = request.data
-#         data2 = json.loads(data)
-#         uid = data2["cid"]
-#         uid_encode = encode_id(uid)
-#         if data2["status"] == "ถูกต้อง":
-#             print(data2)
-#             ub = UserHabit()
-#             ub.id = r.getdel(uid_encode+"id")
-#             ub.exercise = r.getdel(uid_encode+"exercise")
-#             ub.sleep = r.getdel(uid_encode+"sleep")
-#             ub.work = r.getdel(uid_encode+"work")
-#             ub.feeling = r.getdel(uid_encode+"feeling")
-#             ub.income = r.getdel(uid_encode+"income")
-#             ub.expense = r.getdel(uid_encode+"expense")
-#             ub.daily = r.getdel(uid_encode+"daily")
-#             current_date = datetime.now()
-#             formatted_date = current_date.strftime('%d/%m/%Y')
-#             ub.date = formatted_date
-#             db.session.add(ub)
-#             db.session.commit()
-#             return {"status":"add to database"},200
-#         else:
-#             r.delete(uid_encode+"id")
-#             r.delete(uid_encode+"exercise")
-#             r.delete(uid_encode+"sleep")
-#             r.delete(uid_encode+"work")
-#             r.delete(uid_encode+"feeling")
-#             r.delete(uid_encode+"income")
-#             r.delete(uid_encode+"expense")
-#             r.delete(uid_encode+"daily")
-#             return {"status":"cancel data"},400
-#-------------------------------------------DATA
-#----------------------------------------------------------------------#
 @bp.route("/testpostallqueue", methods=["POST"])
 def set_queue():
     if request.data:
@@ -260,7 +170,6 @@ def set_queue():
         uid = data2["cid"]
         if data2["daily"]=="ไม่" or data2["daily"]=="no":
             data2["daily"]=""
-            
         process_data(uid, data2) 
         return {"status": "Data enqueued for processing"}, 201
     else:
@@ -340,13 +249,5 @@ def export_data():
             connection.close()
         except Exception as e:
             print(f"Error export request: {e}") 
-        # t = threading.Thread(target=export.sql_to_csv, args=(cid_encode,name,))
-        # t.setDaemon(True)
-        # t.start()
     return {"status":"success"}
 
-@bp.route("/enc",methods=["GET"])
-def enen():
-    message = "This is a secret message."
-
-    return {"status":"success"},200

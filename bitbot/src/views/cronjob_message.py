@@ -40,11 +40,11 @@ payload = {
 #         ]
 #     }
 
-def send_message():
-    response = requests.post(LINE_API_URL,headers=headers, json=payload)
-    print("Message sent. Response Status Code:", response.status_code)
+# def send_message():
+#     response = requests.post(LINE_API_URL,headers=headers, json=payload)
+#     print("Message sent. Response Status Code:", response.status_code)
 
-def check_use():#multicast send all who didn't use today
+def send_message():#multicast send all who didn't use today
     LINE_API_URL = "https://api.line.me/v2/bot/message/multicast"
     database_path = r'C:\Users\thana\Desktop\Py\bitbitbotbot2\bitbot\bitbot\instance\database.db'
     engine = create_engine(f'sqlite:///{database_path}')
@@ -74,14 +74,12 @@ def check_use():#multicast send all who didn't use today
     response = requests.post(LINE_API_URL,headers=headers, json=payload)
     print("Message sent. Response Status Code:", response.status_code)
     
-def cast_date(date):
-    return datetime.strptime(date, "%d/%m/%Y")
+
 # Schedule job to run every 5 seconds
-schedule.every(5).seconds.do(check_use)
+#schedule.every(5).seconds.do(send_message)
 
-# scheduled_time = "22:30"
-# schedule.every().day.at(scheduled_time).do(send_message)
-
+scheduled_time = "22:30"
+schedule.every().day.at(scheduled_time).do(send_message)
 try:
     while True:
         schedule.run_pending()
