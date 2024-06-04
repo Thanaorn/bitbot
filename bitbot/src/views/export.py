@@ -57,16 +57,13 @@ def sql_to_csv(cid,name):
     column_to_delete = 'key'
     if column_to_delete in df2.columns:
         del df2[column_to_delete]
-        
-    df2.to_csv(csv_file_path, index=False,encoding="utf-8")
     
+    df2.to_csv(csv_file_path, index=False,encoding="utf-8")
     cast_type_back(df2,'income')
     cast_type_back(df2,'expense')
     
-    csv_to_pdf(csv_file_path,pdf_file_path,fonts)
-    plot_col(df2,name)
-    income_expenses(df2,name)
     
+    csv_to_pdf(csv_file_path,pdf_file_path,fonts)
     try:
         merger = PdfMerger()
         merger.append(pdf_file_path)
@@ -80,7 +77,7 @@ def sql_to_csv(cid,name):
     except Exception as e:
                 print(f"Error pdf merger: {e}")
     
-def csv_to_pdf(csv_file_path,pdf_file_path,fonts):
+def csv_to_pdf(csv_file_path,pdf_file_path,fonts,df2,name):
     pdf = FPDF()
     pdf.add_page()
     pdf.add_font('Kanit', '', fonts, uni=True)
@@ -134,6 +131,8 @@ def csv_to_pdf(csv_file_path,pdf_file_path,fonts):
                 
         pdf.output(pdf_file_path)
         plt.close('all')
+        plot_col(df2,name)
+        income_expenses(df2,name)
     except Exception as e:
                 print(f"Error pdf table: {e}")
     

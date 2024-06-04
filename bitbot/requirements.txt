@@ -8,3 +8,8 @@ fpdf2
 schedule
 datetime
 PyPDF2
+locust
+pika
+numpy
+cryptography
+celery

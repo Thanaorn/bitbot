@@ -48,7 +48,7 @@ def use_data(uid):
     ub.expense = encrypt_message(fernet,r.rpop(uid+"expense")).decode()
     ub.daily = encrypt_message(fernet,r.rpop(uid+"daily")).decode()
     ub.key = key.decode()
-    
+    #yesterday
     # today = datetime.now()
     # yesterday = today - timedelta(days=1)
     # formatted_date = yesterday.strftime("%d/%m/%Y")
@@ -80,6 +80,7 @@ def del_data(uid):
     r.delete(uid+"income")
     r.delete(uid+"expense")
     r.delete(uid+"daily")
+    
 @app.task    
 def sql_to_update_table(index_value,uid):
     try:

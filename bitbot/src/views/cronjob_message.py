@@ -76,10 +76,10 @@ def send_message():#multicast send all who didn't use today
     
 
 # Schedule job to run every 5 seconds
-#schedule.every(5).seconds.do(send_message)
+schedule.every(5).seconds.do(send_message)
 
-scheduled_time = "22:30"
-schedule.every().day.at(scheduled_time).do(send_message)
+# scheduled_time = "22:30"
+# schedule.every().day.at(scheduled_time).do(send_message)
 try:
     while True:
         schedule.run_pending()
